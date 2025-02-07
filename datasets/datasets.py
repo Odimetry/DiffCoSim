@@ -54,7 +54,7 @@ class RigidBodyDataset(Dataset):
             root_dir, f"traj_{body}_N{n_traj}_{mode}.pt"
         )
         if os.path.exists(filename) and not regen:
-            ts, zs, is_clds = torch.load(filename)
+            ts, zs, is_clds = torch.load(filename, weights_only=True)
         else:
             print(f"generating trajectories (mode: {mode}), this might take a while...")
             seed_everything(0)
