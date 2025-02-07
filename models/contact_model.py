@@ -286,7 +286,7 @@ class ContactModel(nn.Module):
         Minv_J_e_T = (Minv @ J_e_T.reshape(n, d*C)).reshape(n*d, C)
         J_e_Minv_J_e_T = J_e @ Minv_J_e_T # (C, C)
         M_e = torch.inverse(J_e_Minv_J_e_T) # (C, C) inertia in equality contact space
-        L = torch.cholesky(Minv) # (n, n)
+        L = torch.linalg.cholesky(Minv) # (n, n)
         L_T = L.t() # (n, n)
         L_T_J_e_T = (L_T @ J_e_T.reshape(n, d*C)).reshape(n*d, C)
         Q = (L_T_J_e_T @ M_e) @ L_T_J_e_T.t() # (n*d, n*d)
@@ -363,7 +363,7 @@ class ContactModel(nn.Module):
         n_cld, d, n_o, n_p, _ = Jac.shape
         n = n_o * n_p
         # calculate A_decom
-        Minv_sqrt = torch.cholesky(Minv) # (n, n)
+        Minv_sqrt = torch.linalg.cholesky(Minv) # (n, n)
         Minv_sqrt_Jac_T = (Minv_sqrt @ Jac.reshape(n_cld*d, n*d).t().reshape(n, d*n_cld*d)).reshape(n*d, n_cld*d)
         A_decom = Minv_sqrt_Jac_T
         # make sure v_star is "valid", avoid unbounded cvx problem
