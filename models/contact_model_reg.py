@@ -75,7 +75,7 @@ class ContactModelReg(ContactModel):
             reg = F.softplus(self.reg)
         else:
             reg = self.reg
-        A_decom = torch.cholesky(A+torch.eye(A.shape[0]).type_as(A)*reg, upper=True)
+        A_decom = torch.linalg.cholesky(A+torch.eye(A.shape[0]).type_as(A)*reg).mH
         # make sure v_star is "valid", avoid unbounded cvx problem
         v_star_c = self.get_v_star_c_w_J_e(n_cld, n, d, v_star, Jac.reshape(n_cld*d, n*d), J_e)
 
@@ -128,14 +128,14 @@ class ContactModelReg(ContactModel):
             reg = F.softplus(self.reg)
         else:
             reg = self.reg
-        A_decom = torch.cholesky(A+torch.eye(A.shape[0]).type_as(A)*reg, upper=True)
+        A_decom = torch.linalg.cholesky(A+torch.eye(A.shape[0]).type_as(A)*reg).mH
         # make sure v_star is "valid", avoid unbounded cvx problem
         with torch.no_grad():
             if n_cld > n: # Jac is a tall matrix
                 # v_star_c = J (J_T J)^-1 J_T v_star
                 try:
                     v_star_euc = Jac.reshape(n_cld*d, n*d).t() @ v_star.reshape(n_cld*d, 1) # (n*d, 1)
-                    v_star_euc = torch.solve(v_star_euc, Jac.reshape(n_cld*d, n*d).t() @ Jac.reshape(n_cld*d, n*d))[0]
+                    v_star_euc = torch.linalg.lstsq(Jac.reshape(n_cld*d, n*d).t() @ Jac.reshape(n_cld*d, n*d), v_star_euc)[0]
                     v_star_c = Jac.reshape(n_cld*d, n*d) @ v_star_euc
                 except RuntimeError as e:
                     # https://math.stackexchange.com/questions/748500/how-to-find-linearly-independent-columns-in-a-matrix
@@ -150,7 +150,7 @@ class ContactModelReg(ContactModel):
                                 break
                     Jac_full_rank = Q @ R[:, idx_list]
                     v_star_euc = Jac_full_rank.t() @ v_star.reshape(n_cld*d, 1)
-                    v_star_euc = torch.solve(v_star_euc, Jac_full_rank.t() @ Jac_full_rank)[0]
+                    v_star_euc = torch.linalg.solve(Jac_full_rank.t() @ Jac_full_rank, v_star_euc)[0]
                     v_star_c = Jac_full_rank @ v_star_euc
                     # print("performed QR decomposition")
             else:

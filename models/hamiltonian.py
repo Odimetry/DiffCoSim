@@ -232,9 +232,9 @@ class HNN_Struct(nn.Module):
             assert qdot.ndim == 2
             qdot = qdot.unsqueeze(-1)
             diag_noise = eps * torch.eye(L_q.size(-1), dtype=qdot.dtype, device=qdot.device)
-            M_qdot = torch.solve(
-                qdot, 
-                L_q @ L_q.transpose(-2, -1) + diag_noise
+            M_qdot = torch.linalg.solve(
+                L_q @ L_q.transpose(-2, -1) + diag_noise,
+                qdot
             )[0].squeeze(-1)
             return M_qdot
 

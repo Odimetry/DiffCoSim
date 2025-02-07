@@ -301,7 +301,7 @@ class ContactModel(nn.Module):
 
         # Jac_T_v_star = Jac.reshape(n_cld*d, n*d).t() @ v_star.reshape(n_cld*d, 1) # (n*d, 1)
         # J_e_Jac_T_v_star = J_e @ Jac_T_v_star # (C, 1)
-        # v_right = J_e_T @ torch.solve(J_e_Jac_T_v_star, J_e @ J_e_T)[0] # (n*d, 1)
+        # v_right = J_e_T @ torch.linalg.solve(J_e @ J_e_T, J_e_Jac_T_v_star)[0] # (n*d, 1)
         # v_star_c = Jac.reshape(n_cld*d, n*d) @ (Jac_T_v_star - v_right) # (n_cld*d, 1)
         # compression phase impulse
         try:
@@ -347,15 +347,17 @@ class ContactModel(nn.Module):
             if n_cld > n:
                 # (J J_T - J J_e_T (J_e J_e_T)^-1 J_e J_T) * v_star
                 J_T_v_star = J.t() @ v_star.reshape(n_cld*d, 1)
-                J_T_J__inv_J_T_v_star = torch.solve(J_T_v_star, J.t() @ J)[0]
+                J_T_J__inv_J_T_v_star = torch.linalg.solve(J.t() @ J, J_T_v_star)[0]
                 J_e__J_T_J__inv_J_T_v_star = J_e @ J_T_J__inv_J_T_v_star
-                v_right = J_e.t() @ torch.solve(J_e__J_T_J__inv_J_T_v_star, J_e @ J_e.t())[0]
+                v_right = J_e.t() @ torch.linalg.solve(J_e @ J_e.t(), J_e__J_T_J__inv_J_T_v_star)[0]
                 v_star_c = J @ (J_T_J__inv_J_T_v_star - v_right)
             else:
-                J_J_T__inv_v_star = torch.solve(v_star.reshape(n_cld*d, 1), J @ J.t())[0]
+                # J_J_T__inv_v_star = torch.linalg.solve(J @ J.t(), v_star.reshape(n_cld*d, 1))[0]
+                J_J_T__inv_v_star = torch.linalg.solve(J @ J.t(), v_star.reshape(n_cld*d, 1))
                 J_T__J_J_T__inv_v_star = J.t() @ J_J_T__inv_v_star
                 J_e_J_T__J_J_T__inv_v_star = J_e @ J_T__J_J_T__inv_v_star
-                v_right = J_e.t() @ torch.solve(J_e_J_T__J_J_T__inv_v_star, J_e @ J_e.t())[0]
+                # v_right = J_e.t() @ torch.linalg.solve(J_e @ J_e.t(), J_e_J_T__J_J_T__inv_v_star)[0]
+                v_right = J_e.t() @ torch.linalg.solve(J_e @ J_e.t(), J_e_J_T__J_J_T__inv_v_star)
                 v_star_c = v_star.reshape(n_cld*d, 1) - J @ v_right
             return v_star_c
 
@@ -372,7 +374,8 @@ class ContactModel(nn.Module):
                 # v_star_c = J (J_T J)^-1 J_T v_star
                 try:
                     v_star_euc = Jac.reshape(n_cld*d, n*d).t() @ v_star.reshape(n_cld*d, 1) # (n*d, 1)
-                    v_star_euc = torch.solve(v_star_euc, Jac.reshape(n_cld*d, n*d).t() @ Jac.reshape(n_cld*d, n*d))[0]
+                    # v_star_euc = torch.linalg.solve(Jac.reshape(n_cld*d, n*d).t() @ Jac.reshape(n_cld*d, n*d), v_star_euc)[0]
+                    v_star_euc = torch.linalg.lstsq(Jac.reshape(n_cld*d, n*d).t() @ Jac.reshape(n_cld*d, n*d), v_star_euc)[0]
                     v_star_c = Jac.reshape(n_cld*d, n*d) @ v_star_euc
                 except RuntimeError as e:
                     # https://math.stackexchange.com/questions/748500/how-to-find-linearly-independent-columns-in-a-matrix
@@ -387,7 +390,7 @@ class ContactModel(nn.Module):
                                 break
                     Jac_full_rank = Q @ R[:, idx_list]
                     v_star_euc = Jac_full_rank.t() @ v_star.reshape(n_cld*d, 1)
-                    v_star_euc = torch.solve(v_star_euc, Jac_full_rank.t() @ Jac_full_rank)[0]
+                    v_star_euc = torch.linalg.solve(Jac_full_rank.t() @ Jac_full_rank, v_star_euc)[0]
                     v_star_c = Jac_full_rank @ v_star_euc
                     # print("performed QR decomposition")
             else:

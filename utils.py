@@ -176,7 +176,7 @@ def frame_to_euler(frame):
     # omega = uncross_matrix(Rdot @ R.transpose(-2, -1)) # (*bsT, 3)
     angles = Rotation.from_matrix(R.reshape(-1, 3, 3).detach().cpu().numpy()).as_euler("ZXZ") 
     angles = torch.from_numpy(angles).reshape(*bsT, 3).to(R.device, R.dtype) # (*bsT, 3)
-    eulerdot = torch.solve(omega.unsqueeze(-1), eulerdot_to_omega_matrix(angles))[0].squeeze(-1) # (*bsT, 3)
+    eulerdot = torch.linalg.solve(eulerdot_to_omega_matrix(angles), omega.unsqueeze(-1))[0].squeeze(-1) # (*bsT, 3)
     return torch.stack([angles, eulerdot], dim=-2) # (*bsT, 2, 3)
 
 def com_euler_to_bodyX(com_euler):

@@ -19,7 +19,7 @@ def Proj(DPhi):
     if DPhi.shape[-1]==0: return lambda M:M # (no constraints)
     def _P(M):
         DPhiT = DPhi.transpose(-1, -2)
-        X, _ = torch.solve(DPhiT @ M, DPhiT @ J(DPhi))
+        X = torch.linalg.solve(DPhiT @ J(DPhi), DPhiT @ M)
         return M - J(DPhi @ X)
 
     return _P
@@ -82,7 +82,7 @@ class LagrangianDynamics(nn.Module):
                     for i in range(d)], dim=-1
             )
             RHS = (dL_dq - d2L_dvdq_v).unsqueeze(-1)
-            vdot = torch.solve(RHS, d2L_d2v)[0].squeeze(-1)
+            vdot = torch.linalg.solve(d2L_d2v, RHS)[0].squeeze(-1)
             dynamics = torch.cat([v, vdot], dim=-1)
             return dynamics
 
@@ -121,7 +121,7 @@ class ConstrainedLagrangianDynamics(nn.Module):
                 dphi_dr_T_Minv_f = dphi_dr_T @ Minv_f.unsqueeze(-1)                     # (bs, C, 1)
                 dphi_dot_dr_T_v = dphi_dot_dr_T @ v.reshape(bs, n*d, 1)                 # (bs, C, 1)
                 RHS = dphi_dr_T_Minv_f + dphi_dot_dr_T_v                                # (bs, C, 1)
-                lambda_ = torch.solve(RHS, dphi_dr_T_Minv_dphi_dr)[0]                      # (bs, C, 1)
+                lambda_ = torch.linalg.solve(dphi_dr_T_Minv_dphi_dr, RHS)[0]            # (bs, C, 1)
                 vdot = Minv_f - (Minv_dphi_dr @ lambda_).squeeze(-1)                    # (bs, nd)
             else:
                 vdot = Minv_f

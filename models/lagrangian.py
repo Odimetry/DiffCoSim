@@ -83,7 +83,7 @@ class CLNNwC(nn.Module):
         masses = moments[:, :1] # n_o, 1
         if d == 0:
             return torch.diag_embed(masses[:, 0])
-        blocks = torch.diag_embed(torch.cat([moments[:, 1:].sum(1, keepdim=True)+1, inv_moments[:, 1:]], dim=-1))
+        blocks = torch.diag_embed(torch.cat([moments[:, 1:].sum(1, keepdim=True)+1, moments[:, 1:]], dim=-1))
         blocks[:, 1:, 0] = - moments[:, 1:]
         blocks[:, 0, 1:] = - moments[:, 1:]
         return torch.block_diag(*(blocks*masses[..., None]))

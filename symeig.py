@@ -11,7 +11,7 @@ class Symeig(Function):
 
     @staticmethod
     def forward(ctx, input):
-        lambda_, v = torch.symeig(input, eigenvectors=True, upper=True)
+        lambda_, v = torch.linalg.eigh(input, UPLO='U')
         ctx.save_for_backward(input, lambda_, v)
         return lambda_, v
 
@@ -58,7 +58,7 @@ class Symeig(Function):
 class symeig1_fcn(torch.autograd.Function):
   @staticmethod
   def forward(ctx, A):
-    eival, eivec = torch.symeig(A, eigenvectors=True)
+    eival, eivec = torch.linalg.eigh(A, UPLO='U')
     ctx.save_for_backward(eival, eivec)
     return eival, eivec
   
@@ -92,7 +92,7 @@ class symeig1_fcn(torch.autograd.Function):
 class symeig2_fcn(torch.autograd.Function):
   @staticmethod
   def forward(ctx, A):
-    eival, eivec = torch.symeig(A, eigenvectors=True)
+    eival, eivec = torch.linalg.eigh(A, UPLO="U")
     ctx.save_for_backward(eival, eivec)
     return eival, eivec
   
